@@ -52,8 +52,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # --ignore-scripts: the root postinstall runs lefthook via scripts/,
+      # which is not part of this public source subset.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build workspace
         run: pnpm run build

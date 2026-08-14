@@ -442,9 +442,6 @@ importers:
       electron-builder:
         specifier: ^26.15.3
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)
-      sharp:
-        specifier: ^0.35.3
-        version: 0.35.3(@types/node@22.20.0)
 
   apps/web:
     dependencies:
