@@ -91,10 +91,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Fail the step on a non-zero gh exit code: PowerShell does not
-          # propagate native command failures by default.
+          # Check $LASTEXITCODE explicitly after each gh call: PowerShell
+          # does not propagate native command failures by default, and the
+          # strict-mode switch would abort before the create-or-edit fallback.
           $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
           $zip = Get-ChildItem -Path 'apps/electron/release' -Filter '*.zip' -File | Select-Object -First 1
           if ($null -eq $zip) {
             throw 'No Windows ZIP found in apps/electron/release'
