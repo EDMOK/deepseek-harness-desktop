@@ -1,0 +1,24 @@
+{
+  "name": "@deepseek-ai/dsh-electron",
+  "description": "Electron desktop shell for the dsh web GUI: spawns the harness web profile as a child process and hosts the GUI in a BrowserWindow",
+  "version": "0.1.0-rc.5",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "electron .",
+    "package:harness": "node scripts/pack-harness.mjs",
+    "pack": "pnpm run build && pnpm run package:harness && electron-builder --dir",
+    "dist": "pnpm run build && pnpm run package:harness && electron-builder"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  }
+}

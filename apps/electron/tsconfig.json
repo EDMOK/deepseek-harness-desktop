@@ -1,0 +1,11 @@
+{
+  // Standalone project for the Electron main process: plain Node code, no
+  // workspace imports, so it is not part of the host/client aggregates.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["node"]
+  },
+  "include": ["src"]
+}

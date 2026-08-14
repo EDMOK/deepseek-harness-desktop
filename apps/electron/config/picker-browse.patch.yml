@@ -1,0 +1,14 @@
+# dsh-electron overlay: pin the in-app directory browser over the native
+# folder dialog. The auto chooser picks `native` on a loopback-bound win32
+# boot; the native dialog worker spawns through process.execPath, which in the
+# packaged shell is the Electron binary — a worker that must be a plain Node
+# process. The browse backend (host + client surface) is self-contained in the
+# harness tree, so packaged behavior matches the browser UI. Passed to the
+# web profile with --patch; applied after every bundle layer.
+- id: directory-picker
+  disabled: true
+- insert:
+    - id: directory-picker-browse
+      name: '@deepseek-ai/dsh-host-directory-picker-browse'
+    - id: directory-picker-browse-surface
+      name: '@deepseek-ai/dsh-client-ui-directory-picker-browse'

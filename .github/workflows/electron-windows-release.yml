@@ -1,0 +1,104 @@
+# Build the public desktop distribution from a version tag.
+# The repository remains source-first; only the Windows x64 ZIP is attached to a GitHub Release.
+name: Electron Windows Release
+
+on:
+  push:
+    tags:
+      - dsh-v*
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing dsh-v* tag to build and publish
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: '24'
+  DSH_TELEMETRY_DISABLED: '1'
+
+jobs:
+  windows-x64:
+    name: Windows x64 ZIP
+    runs-on: windows-2025
+    steps:
+      - name: Resolve release tag
+        shell: pwsh
+        run: |
+          $tag = '${{ inputs.tag }}'
+          if ('${{ github.event_name }}' -ne 'workflow_dispatch') {
+            $tag = $env:GITHUB_REF_NAME
+          }
+          if ($tag -notmatch '^dsh-v') {
+            throw "Expected a dsh-v* tag, received '$tag'"
+          }
+          "RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          dest: ${{ runner.temp }}/setup-pnpm
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace
+        run: pnpm run build
+
+      - name: Stage production harness
+        run: pnpm --filter @deepseek-ai/dsh-electron run package:harness
+
+      - name: Build Windows x64 ZIP
+        run: pnpm --filter @deepseek-ai/dsh-electron exec electron-builder --win zip --x64 --publish never
+
+      - name: Create checksum file
+        shell: pwsh
+        run: |
+          $zips = @(Get-ChildItem -Path 'apps/electron/release' -Filter '*.zip' -File)
+          if ($zips.Count -ne 1) {
+            throw "Expected exactly one Windows ZIP, found $($zips.Count)"
+          }
+          $hash = (Get-FileHash -Path $zips[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($zips[0].Name)" | Set-Content -Path 'apps/electron/release/SHA256SUMS.txt' -Encoding ascii
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-windows-x64-${{ env.RELEASE_TAG }}
+          path: |
+            apps/electron/release/*.zip
+            apps/electron/release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $zip = Get-ChildItem -Path 'apps/electron/release' -Filter '*.zip' -File | Select-Object -First 1
+          $checksums = 'apps/electron/release/SHA256SUMS.txt'
+          $arguments = @(
+            'release', 'create', $env:RELEASE_TAG,
+            $zip.FullName, $checksums,
+            '--title', "DeepSeek Harness $env:RELEASE_TAG",
+            '--generate-notes',
+            '--verify-tag'
+          )
+          if ($env:RELEASE_TAG -match '-') {
+            $arguments += '--prerelease'
+          }
+          gh @arguments

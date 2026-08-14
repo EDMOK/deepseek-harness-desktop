@@ -1,0 +1,21 @@
+# electron-builder config for the dsh desktop shell.
+# The harness (dsh CLI + built web dist + production node_modules) is staged
+# by `pnpm run package:harness` into ../../deploy/dsh; the afterPack hook
+# (scripts/after-pack.mjs) copies it under resources/harness, and the
+# Electron main runs it via ELECTRON_RUN_AS_NODE.
+appId: ai.deepseek.dsh
+productName: dsh
+directories:
+  output: release
+files:
+  - dist/**
+  - package.json
+afterPack: ./scripts/after-pack.mjs
+npmRebuild: false
+win:
+  icon: ../../black_deepseek.ico
+  target:
+    - zip
+
+# The public desktop distribution is intentionally Windows x64 ZIP only.
+# Other platforms remain source-readable but are not published as binaries.
