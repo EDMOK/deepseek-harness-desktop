@@ -91,11 +91,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Fail the step on a non-zero gh exit code: PowerShell does not
+          # propagate native command failures by default.
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           $zip = Get-ChildItem -Path 'apps/electron/release' -Filter '*.zip' -File | Select-Object -First 1
+          if ($null -eq $zip) {
+            throw 'No Windows ZIP found in apps/electron/release'
+          }
           $checksums = 'apps/electron/release/SHA256SUMS.txt'
           $arguments = @(
             'release', 'create', $env:RELEASE_TAG,
-            $zip.FullName, $checksums,
             '--title', "DeepSeek Harness $env:RELEASE_TAG",
             '--generate-notes',
             '--verify-tag'
@@ -104,3 +110,18 @@ jobs:
             $arguments += '--prerelease'
           }
           gh @arguments
+          if ($LASTEXITCODE -ne 0) {
+            # The release may already exist from an earlier run of this tag.
+            $editArguments = @('release', 'edit', $env:RELEASE_TAG, '--title', "DeepSeek Harness $env:RELEASE_TAG")
+            if ($env:RELEASE_TAG -match '-') {
+              $editArguments += '--prerelease'
+            }
+            gh @editArguments
+            if ($LASTEXITCODE -ne 0) {
+              throw "gh release create/edit failed with exit code $LASTEXITCODE"
+            }
+          }
+          gh release upload $env:RELEASE_TAG $zip.FullName $checksums --clobber
+          if ($LASTEXITCODE -ne 0) {
+            throw "gh release upload failed with exit code $LASTEXITCODE"
+          }
