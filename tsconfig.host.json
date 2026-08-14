@@ -104,7 +104,12 @@
     "packages/client/tsdown.client.ts",
     "scripts/client-bundle-css.spec.ts",
     "packages/typert/generator/tests/fixtures/**",
-    "scripts/client-bundle-purity.spec.ts"
+    "scripts/client-bundle-purity.spec.ts",
+    // The public subset ships source, not test suites: package tests
+    // reference scripts/ generators that are not part of this repository.
+    "**/tests/**",
+    "apps/web/tests/**",
+    "apps/web/stress-tests/**"
   ],
   "references": [
     { "path": "./vendor/cosmokit" },
