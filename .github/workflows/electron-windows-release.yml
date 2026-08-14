@@ -60,11 +60,15 @@ jobs:
       - name: Build workspace
         run: pnpm run build
 
+      - name: Build Electron main process
+        run: pnpm --filter @deepseek-ai/dsh-electron run build
+
       - name: Stage production harness
         run: pnpm --filter @deepseek-ai/dsh-electron run package:harness
 
       - name: Build Windows x64 ZIP
-        run: pnpm --filter @deepseek-ai/dsh-electron exec electron-builder --win zip --x64 --publish never
+        working-directory: apps/electron
+        run: node_modules/.bin/electron-builder.cmd --win zip --x64 --publish never
 
       - name: Create checksum file
         shell: pwsh
